@@ -5,9 +5,10 @@ import { lusitana } from '@/app/ui/fonts';
 import { fetchCardData, fetchLatestInvoices, fetchRevenue } from '../lib/data';
 
 export default async function Page() {
-    const revenue = await fetchRevenue();
-    const latestInvoices = await fetchLatestInvoices();
-    const { totalPaidInvoices, numberOfCustomers, numberOfInvoices, totalPendingInvoices } = await fetchCardData();
+    const [revenue, latestInvoices, cardData] = await Promise.allSettled([fetchRevenue(), fetchLatestInvoices(), fetchCardData()]);
+    if (cardData.status === 'rejected' || revenue.status === 'rejected' || latestInvoices.status === 'rejected')
+        throw Error('failed to fetch');
+    const { totalPaidInvoices, numberOfCustomers, numberOfInvoices, totalPendingInvoices } = cardData.value;
     return (
         <main>
             <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
@@ -20,8 +21,8 @@ export default async function Page() {
                 <Card title="Total Customers" value={numberOfCustomers} type="customers" />
             </div>
             <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
-                <RevenueChart revenue={revenue} />
-                <LatestInvoices latestInvoices={latestInvoices} />
+                <RevenueChart revenue={revenue.value} />
+                <LatestInvoices latestInvoices={latestInvoices.value} />
             </div>
         </main>
     );
